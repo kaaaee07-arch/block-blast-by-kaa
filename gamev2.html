@@ -1,0 +1,1339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>KAAXPLACE - Block Blast Puzzle</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
+    <style>
+        /* Reset dan Base Styles */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        }
+
+        body {
+            background-color: #0a192f;
+            color: #ffffff;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Container Utama */
+        .game-container {
+            width: 100%;
+            height: 100%;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        /* Loading Screen */
+        #loading-screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            background: radial-gradient(circle at center, #0a192f 0%, #050d1a 100%);
+        }
+
+        .loading-content {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 50px;
+        }
+
+        .loading-block-container {
+            position: relative;
+            width: 180px;
+            height: 180px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .loading-block {
+            width: 120px;
+            height: 120px;
+            position: relative;
+            transform-style: preserve-3d;
+            animation: rotate 4s infinite linear;
+            margin-bottom: 0;
+        }
+
+        .block-face {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-size: 16px;
+            font-weight: bold;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+            backface-visibility: hidden;
+        }
+
+        .front { transform: translateZ(60px); }
+        .back { transform: translateZ(-60px) rotateY(180deg); }
+        .top { transform: rotateX(90deg) translateZ(60px); }
+        .bottom { transform: rotateX(-90deg) translateZ(60px); }
+        .left { transform: rotateY(-90deg) translateZ(60px); }
+        .right { transform: rotateY(90deg) translateZ(60px); }
+
+        .progress-container {
+            width: 300px;
+            height: 20px;
+            background-color: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            overflow: hidden;
+            position: relative;
+            border: 1px solid rgba(0, 255, 255, 0.3);
+        }
+
+        .progress-bar {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, #00ffff, #ff00ff);
+            border-radius: 10px;
+            transition: width 0.2s ease;
+            position: relative;
+            box-shadow: 0 0 10px rgba(0, 255, 255, 0.5);
+        }
+
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(
+                90deg,
+                transparent,
+                transparent 8px,
+                rgba(255, 255, 255, 0.4) 8px,
+                rgba(255, 255, 255, 0.4) 16px
+            );
+            animation: dna-move 0.8s linear infinite;
+        }
+
+        .loading-text {
+            color: #00ffff;
+            font-size: 18px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            text-shadow: 0 0 10px #00ffff;
+            animation: text-pulse 1.5s ease-in-out infinite alternate;
+            margin-top: 20px;
+        }
+
+        @keyframes rotate {
+            0% { transform: rotateX(0) rotateY(0) rotateZ(0); }
+            100% { transform: rotateX(360deg) rotateY(360deg) rotateZ(180deg); }
+        }
+
+        @keyframes dna-move {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(16px); }
+        }
+
+        @keyframes text-pulse {
+            0% { 
+                opacity: 0.7;
+                text-shadow: 0 0 10px #00ffff;
+            }
+            100% { 
+                opacity: 1;
+                text-shadow: 0 0 20px #00ffff, 0 0 30px #00ffff;
+            }
+        }
+
+        /* Game Interface - Layout Profesional */
+        #game-interface {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: none;
+            flex-direction: column;
+            z-index: 80;
+            background: radial-gradient(circle at center, #0a192f 0%, #050d1a 100%);
+        }
+
+        /* Header dengan Best Score */
+        .game-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 40px;
+            background: rgba(0, 0, 0, 0.6);
+            border-bottom: 2px solid #00ffff;
+            box-shadow: 0 4px 20px rgba(0, 255, 255, 0.3);
+        }
+
+        .logo-section {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+        }
+
+        .game-logo {
+            font-size: 2rem;
+            font-weight: 900;
+            color: transparent;
+            -webkit-text-stroke: 2px #00ffff;
+            text-shadow: 0 0 20px #00ffff;
+        }
+
+        .score-section {
+            display: flex;
+            gap: 30px;
+            align-items: center;
+        }
+
+        .score-card {
+            background: rgba(0, 255, 255, 0.1);
+            border: 2px solid #00ffff;
+            border-radius: 12px;
+            padding: 15px 25px;
+            text-align: center;
+            min-width: 150px;
+            box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+        }
+
+        .score-label {
+            font-size: 0.9rem;
+            color: #88ffff;
+            margin-bottom: 5px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .score-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            color: #00ffff;
+            text-shadow: 0 0 10px #00ffff;
+        }
+
+        .best-score {
+            background: rgba(255, 0, 255, 0.1);
+            border-color: #ff00ff;
+            box-shadow: 0 0 15px rgba(255, 0, 255, 0.3);
+        }
+
+        .best-score .score-label {
+            color: #ff88ff;
+        }
+
+        .best-score .score-value {
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff;
+        }
+
+        /* Main Game Area */
+        .game-main {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            padding: 20px;
+            gap: 20px;
+        }
+
+        /* Game Grid Area */
+        .grid-section {
+            flex: 1;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px 0;
+        }
+
+        .game-grid {
+            display: grid;
+            grid-template-columns: repeat(8, 1fr);
+            grid-template-rows: repeat(8, 1fr);
+            gap: 4px;
+            width: 500px;
+            height: 500px;
+            background: rgba(0, 255, 255, 0.05);
+            border: 4px solid #00ffff;
+            border-radius: 16px;
+            padding: 15px;
+            box-shadow: 
+                0 0 40px rgba(0, 255, 255, 0.4),
+                inset 0 0 20px rgba(0, 255, 255, 0.1);
+            position: relative;
+        }
+
+        .grid-cell {
+            background: rgba(0, 255, 255, 0.03);
+            border: 1px solid rgba(0, 255, 255, 0.15);
+            border-radius: 4px;
+            transition: all 0.2s ease;
+            position: relative;
+        }
+
+        .grid-cell:hover {
+            background: rgba(0, 255, 255, 0.08);
+        }
+
+        .grid-cell.filled {
+            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .grid-cell.highlight-target {
+            background: rgba(0, 255, 255, 0.25) !important;
+            border: 2px dashed #00ffff;
+            box-shadow: 0 0 15px #00ffff !important;
+            animation: target-pulse 1s ease-in-out infinite;
+        }
+        
+        .grid-cell.highlight-invalid {
+            background: rgba(255, 0, 0, 0.25) !important;
+            border: 2px dashed #ff0000;
+            box-shadow: 0 0 15px #ff0000 !important;
+            animation: invalid-pulse 1s ease-in-out infinite;
+        }
+
+        @keyframes target-pulse {
+            0%, 100% { opacity: 0.7; }
+            50% { opacity: 1; }
+        }
+
+        @keyframes invalid-pulse {
+            0%, 100% { opacity: 0.6; }
+            50% { opacity: 0.9; }
+        }
+
+        /* Block Inventory */
+        .inventory-section {
+            background: rgba(0, 0, 0, 0.6);
+            border-top: 2px solid #00ffff;
+            border-radius: 20px 20px 0 0;
+            padding: 25px 40px;
+            box-shadow: 0 -5px 25px rgba(0, 255, 255, 0.2);
+        }
+
+        .inventory-title {
+            text-align: center;
+            color: #00ffff;
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 20px;
+            text-shadow: 0 0 10px #00ffff;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+        }
+
+        .block-inventory {
+            display: flex;
+            justify-content: center;
+            gap: 35px;
+            padding: 15px;
+            min-height: 140px;
+        }
+
+        .block-preview {
+            width: 110px;
+            height: 110px;
+            background: rgba(255, 255, 255, 0.08);
+            border: 3px solid #00ffff;
+            border-radius: 12px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            overflow: visible;
+            box-shadow: 
+                0 0 25px rgba(0, 255, 255, 0.4),
+                inset 0 0 15px rgba(0, 255, 255, 0.1);
+            cursor: grab;
+            transition: all 0.3s ease;
+            opacity: 1;
+            z-index: 1;
+        }
+        
+        .block-preview:hover {
+            transform: translateY(-5px);
+            box-shadow: 
+                0 10px 30px rgba(0, 255, 255, 0.6),
+                inset 0 0 15px rgba(0, 255, 255, 0.2);
+        }
+        
+        .block-preview.dragging {
+            opacity: 0.8;
+            transform: scale(1.15) rotate(5deg);
+            cursor: grabbing;
+            box-shadow: 
+                0 15px 40px rgba(0, 255, 255, 0.8),
+                inset 0 0 20px rgba(0, 255, 255, 0.3);
+            z-index: 10;
+            position: fixed;
+            transition: none;
+        }
+        
+        .block-preview.disabled {
+            opacity: 0.4;
+            border-color: #666;
+            cursor: not-allowed;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .block-preview.disabled:hover {
+            transform: none;
+            box-shadow: none;
+        }
+
+        .block-shape {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 4px;
+            width: 85%;
+            height: 85%;
+        }
+
+        .shape-cell {
+            background: #00ffff;
+            border-radius: 3px;
+            box-shadow: 0 0 8px #00ffff;
+            transform: scale(1);
+            transition: transform 0.2s ease;
+        }
+        
+        .block-preview:hover .shape-cell:not(.empty) {
+            transform: scale(1.15);
+        }
+
+        .shape-cell.empty {
+            background: transparent !important;
+            box-shadow: none !important;
+        }
+        
+        /* Ghost block untuk preview penempatan */
+        .ghost-block {
+            position: absolute;
+            display: grid;
+            gap: 4px;
+            pointer-events: none;
+            z-index: 5;
+            opacity: 0.6;
+            transition: all 0.2s ease;
+            filter: blur(1px);
+        }
+        
+        .ghost-cell {
+            background: rgba(0, 255, 255, 0.4);
+            border-radius: 3px;
+            box-shadow: 0 0 8px rgba(0, 255, 255, 0.6);
+        }
+
+        /* Utility Classes */
+        .hidden {
+            display: none !important;
+        }
+
+        .visible {
+            display: flex !important;
+        }
+
+        /* Particle Effects */
+        .particle {
+            position: fixed;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            pointer-events: none;
+            z-index: 10;
+        }
+
+        /* Game Over Overlay */
+        .game-over-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            display: none;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 200;
+            backdrop-filter: blur(5px);
+        }
+
+        .game-over-content {
+            background: linear-gradient(135deg, #0a192f, #1a3a5f);
+            border: 4px solid #ff00ff;
+            border-radius: 20px;
+            padding: 40px;
+            text-align: center;
+            max-width: 500px;
+            width: 90%;
+            box-shadow: 0 0 50px rgba(255, 0, 255, 0.7);
+            transform: scale(0);
+            animation: game-over-popup 0.5s forwards 0.3s;
+        }
+
+        .game-over-title {
+            font-size: 3rem;
+            font-weight: 900;
+            color: #ff00ff;
+            text-shadow: 0 0 20px #ff00ff;
+            margin-bottom: 20px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .game-over-score {
+            font-size: 2.5rem;
+            color: #00ffff;
+            margin-bottom: 30px;
+            text-shadow: 0 0 15px #00ffff;
+        }
+
+        .game-over-message {
+            font-size: 1.2rem;
+            margin-bottom: 30px;
+            color: #ffffff;
+            line-height: 1.5;
+        }
+
+        .game-over-buttons {
+            display: flex;
+            justify-content: center;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .game-over-button {
+            padding: 12px 30px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .restart-button {
+            background: linear-gradient(45deg, #00ffff, #00b3b3);
+            color: #0a192f;
+            box-shadow: 0 0 20px rgba(0, 255, 255, 0.5);
+        }
+
+        .restart-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(0, 255, 255, 0.8);
+        }
+
+        .menu-button {
+            background: linear-gradient(45deg, #ff00ff, #b300b3);
+            color: white;
+            box-shadow: 0 0 20px rgba(255, 0, 255, 0.5);
+        }
+
+        .menu-button:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 0 30px rgba(255, 0, 255, 0.8);
+        }
+
+        @keyframes game-over-popup {
+            0% { transform: scale(0); }
+            70% { transform: scale(1.1); }
+            100% { transform: scale(1); }
+        }
+
+        /* Responsive Design */
+        @media (max-width: 768px) {
+            .game-header {
+                padding: 15px 20px;
+                flex-direction: column;
+                gap: 15px;
+            }
+
+            .score-section {
+                gap: 15px;
+            }
+
+            .score-card {
+                padding: 10px 15px;
+                min-width: 120px;
+            }
+
+            .score-value {
+                font-size: 1.4rem;
+            }
+
+            .game-grid {
+                width: 350px;
+                height: 350px;
+                gap: 3px;
+            }
+
+            .block-inventory {
+                gap: 20px;
+            }
+
+            .block-preview {
+                width: 90px;
+                height: 90px;
+            }
+
+            .game-over-content {
+                padding: 25px;
+            }
+
+            .game-over-title {
+                font-size: 2.2rem;
+            }
+
+            .game-over-score {
+                font-size: 1.8rem;
+            }
+
+            .game-over-buttons {
+                flex-direction: column;
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="game-container">
+        <div id="loading-screen" class="visible">
+            <div class="loading-content">
+                <div class="loading-block-container">
+                    <div class="loading-block">
+                        <div class="block-face front">KAAX</div>
+                        <div class="block-face back">PLACE</div>
+                        <div class="block-face top">KAAX</div>
+                        <div class="block-face bottom">PLACE</div>
+                        <div class="block-face left">KAAX</div>
+                        <div class="block-face right">PLACE</div>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar" id="progress-bar"></div>
+                </div>
+                <div class="loading-text" id="loading-text">LOADING KAAXPLACE</div>
+            </div>
+        </div>
+
+        <div id="game-interface" class="hidden">
+            <!-- Header dengan Best Score -->
+            <div class="game-header">
+                <div class="logo-section">
+                    <div class="game-logo">KAAXPLACE</div>
+                </div>
+                <div class="score-section">
+                    <div class="score-card">
+                        <div class="score-label">Current Score</div>
+                        <div class="score-value" id="current-score">0</div>
+                    </div>
+                    <div class="score-card best-score">
+                        <div class="score-label">Best Score</div>
+                        <div class="score-value" id="best-score">0</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Main Game Area -->
+            <div class="game-main">
+                <!-- Grid Section (Tengah) -->
+                <div class="grid-section">
+                    <div class="game-grid" id="game-grid">
+                        <!-- Grid cells akan di-generate oleh JavaScript -->
+                    </div>
+                </div>
+
+                <!-- Inventory Section (Bawah) -->
+                <div class="inventory-section">
+                    <div class="inventory-title">Drag Blocks to Grid</div>
+                    <div class="block-inventory" id="block-inventory">
+                        <!-- Block previews akan di-generate oleh JavaScript -->
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- WKWKWK Game Over Overlay -->
+        <div class="game-over-overlay" id="game-over-overlay">
+            <div class="game-over-content">
+                <h1 class="game-over-title">WKWKW GAME OVER</h1>
+                <div class="game-over-score" id="final-score">Score: 0</div>
+                <p class="game-over-message" id="game-over-message">Great job! You've reached the end of the game.</p>
+                <div class="game-over-buttons">
+                    <button class="game-over-button restart-button" id="restart-button">Play Again</button>
+                    <button class="game-over-button menu-button" id="menu-button">Main Menu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Game State
+        const gameState = {
+            currentScreen: 'loading',
+            score: 0,
+            bestScore: localStorage.getItem('kaaxplaceBestScore') || 0,
+            gridSize: 8,
+            blocks: [],
+            nextBlocks: [],
+            grid: [],
+            colors: ['#00ffff', '#ff00ff', '#7b2cbf', '#f3ff00', '#00ff7f', '#ff7b00'],
+            drag: {
+                isDragging: false,
+                startX: 0,
+                startY: 0,
+                currentBlockIndex: -1,
+                ghostBlock: null,
+                validPlacement: false,
+                currentPosition: { row: -1, col: -1 }
+            },
+            gameOver: false
+        };
+
+        // DOM Elements
+        const loadingScreen = document.getElementById('loading-screen');
+        const gameInterface = document.getElementById('game-interface');
+        const progressBar = document.getElementById('progress-bar');
+        const loadingText = document.getElementById('loading-text');
+        const gameGrid = document.getElementById('game-grid');
+        const blockInventory = document.getElementById('block-inventory');
+        const currentScoreDisplay = document.getElementById('current-score');
+        const bestScoreDisplay = document.getElementById('best-score');
+        const gameOverOverlay = document.getElementById('game-over-overlay');
+        const finalScoreDisplay = document.getElementById('final-score');
+        const gameOverMessage = document.getElementById('game-over-message');
+        const restartButton = document.getElementById('restart-button');
+        const menuButton = document.getElementById('menu-button');
+
+        // Block Shapes
+        const blockShapes = [
+            // Square (2x2)
+            [[1, 1], [1, 1]],
+            // L-shape (3x3)
+            [[1, 0, 0], [1, 0, 0], [1, 1, 0]],
+            // Line (1x4)
+            [[1], [1], [1], [1]],
+            // Line (4x1)
+            [[1, 1, 1, 1]],
+            // T-shape (3x3)
+            [[0, 1, 0], [1, 1, 1], [0, 0, 0]],
+            // Z-shape (3x3)
+            [[1, 1, 0], [0, 1, 1], [0, 0, 0]],
+            // Small L-shape (2x2)
+            [[1, 0], [1, 1]],
+            // Single Block (1x1)
+            [[1]],
+            // Plus shape (3x3)
+            [[0, 1, 0], [1, 1, 1], [0, 1, 0]]
+        ];
+
+        // Utility: Mendapatkan warna acak
+        function getRandomColor() {
+            return gameState.colors[Math.floor(Math.random() * gameState.colors.length)];
+        }
+
+        // Initialize Game dengan Loading yang Dipercepat
+        function initGame() {
+            let progress = 0;
+            const loadingMessages = [
+                "LOADING KAAXPLACE",
+                "INITIALIZING GRID",
+                "PREPARING BLOCKS",
+                "READY TO PLAY"
+            ];
+            let messageIndex = 0;
+            
+            const loadingInterval = setInterval(() => {
+                progress += Math.random() * 15 + 5;
+                if (progress >= 100) {
+                    progress = 100;
+                    clearInterval(loadingInterval);
+                    setTimeout(startGame, 300);
+                }
+                progressBar.style.width = `${progress}%`;
+                
+                if (progress >= 25 && messageIndex === 0) {
+                    loadingText.textContent = loadingMessages[1];
+                    messageIndex = 1;
+                } else if (progress >= 50 && messageIndex === 1) {
+                    loadingText.textContent = loadingMessages[2];
+                    messageIndex = 2;
+                } else if (progress >= 85 && messageIndex === 2) {
+                    loadingText.textContent = loadingMessages[3];
+                    messageIndex = 3;
+                }
+            }, 100);
+        }
+
+        // Start Game
+        function startGame() {
+            loadingScreen.classList.remove('visible');
+            loadingScreen.classList.add('hidden');
+            gameInterface.classList.remove('hidden');
+            gameInterface.classList.add('visible');
+            gameState.currentScreen = 'game';
+            gameState.gameOver = false;
+
+            // Initialize best score
+            bestScoreDisplay.textContent = gameState.bestScore;
+
+            // Initialize grid and blocks
+            initializeGrid();
+            generateNextBlocks();
+            
+            // Render initial state
+            updateUI();
+            renderBlockPreviews();
+        }
+
+        // Initialize Grid
+        function initializeGrid() {
+            gameGrid.innerHTML = '';
+            gameState.grid = Array(gameState.gridSize).fill().map(() => 
+                Array(gameState.gridSize).fill({ occupied: false, color: null })
+            );
+            
+            for (let i = 0; i < gameState.gridSize; i++) {
+                for (let j = 0; j < gameState.gridSize; j++) {
+                    const cell = document.createElement('div');
+                    cell.className = 'grid-cell';
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+                    gameGrid.appendChild(cell);
+                }
+            }
+        }
+
+        // Generate Next Blocks
+        function generateNextBlocks() {
+            gameState.nextBlocks = [];
+            for (let i = 0; i < 3; i++) {
+                const randomShape = blockShapes[Math.floor(Math.random() * blockShapes.length)];
+                gameState.nextBlocks.push({
+                    shape: randomShape,
+                    color: getRandomColor()
+                });
+            }
+        }
+
+        // Render Block Previews
+        function renderBlockPreviews() {
+            blockInventory.innerHTML = '';
+            
+            gameState.nextBlocks.forEach((blockObj, index) => {
+                const preview = document.createElement('div');
+                const isPossible = canPlaceAnywhere(blockObj.shape);
+                preview.className = `block-preview ${isPossible ? '' : 'disabled'}`;
+                preview.dataset.blockIndex = index;
+                
+                const shapeContainer = document.createElement('div');
+                shapeContainer.className = 'block-shape';
+                
+                const block = blockObj.shape;
+                const color = blockObj.color;
+                const rows = block.length;
+                const cols = block[0].length;
+                
+                shapeContainer.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+                shapeContainer.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+
+                for (let i = 0; i < rows; i++) {
+                    for (let j = 0; j < cols; j++) {
+                        const cell = document.createElement('div');
+                        if (block[i] && block[i][j]) {
+                            cell.className = 'shape-cell';
+                            cell.style.background = color;
+                            cell.style.boxShadow = `0 0 8px ${color}`;
+                        } else {
+                            cell.className = 'shape-cell empty';
+                        }
+                        shapeContainer.appendChild(cell);
+                    }
+                }
+                
+                preview.appendChild(shapeContainer);
+                blockInventory.appendChild(preview);
+                
+                if (isPossible) {
+                    preview.addEventListener('mousedown', handleDragStart);
+                    preview.addEventListener('touchstart', handleDragStart, { passive: false });
+                }
+            });
+        }
+
+        // --- Drag and Drop Logic ---
+
+        function getTargetCell(x, y) {
+            const elements = document.elementsFromPoint(x, y);
+            return elements.find(el => el.classList.contains('grid-cell'));
+        }
+
+        function handleDragStart(e) {
+            if (gameState.gameOver) return;
+            
+            e.preventDefault();
+            const preview = e.currentTarget;
+            const index = parseInt(preview.dataset.blockIndex);
+            
+            if (!canPlaceAnywhere(gameState.nextBlocks[index].shape)) {
+                return;
+            }
+            
+            gameState.drag.isDragging = true;
+            gameState.drag.currentBlockIndex = index;
+            
+            const startX = e.clientX || e.touches[0].clientX;
+            const startY = e.clientY || e.touches[0].clientY;
+            gameState.drag.startX = startX;
+            gameState.drag.startY = startY;
+
+            createGhostBlock(index);
+            preview.classList.add('dragging');
+            
+            document.addEventListener('mousemove', handleDragMove);
+            document.addEventListener('mouseup', handleDragEnd);
+            document.addEventListener('touchmove', handleDragMove, { passive: false });
+            document.addEventListener('touchend', handleDragEnd);
+        }
+
+        function createGhostBlock(blockIndex) {
+            const blockObj = gameState.nextBlocks[blockIndex];
+            if (!blockObj) return;
+            
+            const ghostBlock = document.createElement('div');
+            ghostBlock.className = 'ghost-block';
+            
+            const block = blockObj.shape;
+            const rows = block.length;
+            const cols = block[0].length;
+            
+            ghostBlock.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+            ghostBlock.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+            
+            for (let i = 0; i < rows; i++) {
+                for (let j = 0; j < cols; j++) {
+                    if (block[i] && block[i][j]) {
+                        const cell = document.createElement('div');
+                        cell.className = 'ghost-cell';
+                        ghostBlock.appendChild(cell);
+                    }
+                }
+            }
+            
+            document.body.appendChild(ghostBlock);
+            gameState.drag.ghostBlock = ghostBlock;
+        }
+
+        function handleDragMove(e) {
+            if (!gameState.drag.isDragging || gameState.gameOver) return;
+            e.preventDefault();
+            
+            const currentX = e.clientX || e.touches[0].clientX;
+            const currentY = e.clientY || e.touches[0].clientY;
+            
+            if (gameState.drag.ghostBlock) {
+                gameState.drag.ghostBlock.style.left = `${currentX - 30}px`;
+                gameState.drag.ghostBlock.style.top = `${currentY - 30}px`;
+            }
+            
+            const targetCell = getTargetCell(currentX, currentY);
+            clearHighlights();
+            
+            if (targetCell) {
+                const row = parseInt(targetCell.dataset.row);
+                const col = parseInt(targetCell.dataset.col);
+                gameState.drag.currentPosition = { row, col };
+                
+                const isValid = checkPlacement(row, col, gameState.drag.currentBlockIndex);
+                gameState.drag.validPlacement = isValid;
+                highlightCells(row, col, isValid);
+            } else {
+                gameState.drag.validPlacement = false;
+                gameState.drag.currentPosition = { row: -1, col: -1 };
+            }
+        }
+
+        function checkPlacement(row, col, blockIndex) {
+            const blockObj = gameState.nextBlocks[blockIndex];
+            if (!blockObj) return false;
+            
+            const currentBlock = blockObj.shape;
+            const blockHeight = currentBlock.length;
+            const blockWidth = currentBlock[0].length;
+            
+            if (row + blockHeight > gameState.gridSize || col + blockWidth > gameState.gridSize) {
+                return false;
+            }
+            
+            for (let i = 0; i < blockHeight; i++) {
+                for (let j = 0; j < blockWidth; j++) {
+                    if (currentBlock[i][j] && gameState.grid[row + i][col + j].occupied) {
+                        return false;
+                    }
+                }
+            }
+            
+            return true;
+        }
+
+        function handleDragEnd(e) {
+            if (!gameState.drag.isDragging || gameState.gameOver) return;
+            
+            const preview = document.querySelector(`.block-preview[data-block-index="${gameState.drag.currentBlockIndex}"]`);
+            if (preview) {
+                preview.classList.remove('dragging');
+            }
+            
+            if (gameState.drag.ghostBlock) {
+                gameState.drag.ghostBlock.remove();
+                gameState.drag.ghostBlock = null;
+            }
+            
+            if (gameState.drag.validPlacement && 
+                gameState.drag.currentPosition.row !== -1 && 
+                gameState.drag.currentPosition.col !== -1) {
+                
+                placeBlock(
+                    gameState.drag.currentPosition.row, 
+                    gameState.drag.currentPosition.col, 
+                    gameState.drag.currentBlockIndex
+                );
+            }
+            
+            gameState.drag.isDragging = false;
+            gameState.drag.currentBlockIndex = -1;
+            gameState.drag.validPlacement = false;
+            gameState.drag.currentPosition = { row: -1, col: -1 };
+            clearHighlights();
+            
+            document.removeEventListener('mousemove', handleDragMove);
+            document.removeEventListener('mouseup', handleDragEnd);
+            document.removeEventListener('touchmove', handleDragMove);
+            document.removeEventListener('touchend', handleDragEnd);
+        }
+
+        function highlightCells(row, col, isValid) {
+            const blockObj = gameState.nextBlocks[gameState.drag.currentBlockIndex];
+            if (!blockObj) return;
+            
+            const currentBlock = blockObj.shape;
+            const blockHeight = currentBlock.length;
+            const blockWidth = currentBlock[0].length;
+            
+            for (let i = 0; i < blockHeight; i++) {
+                for (let j = 0; j < blockWidth; j++) {
+                    if (currentBlock[i][j]) {
+                        const cellRow = row + i;
+                        const cellCol = col + j;
+                        const cell = document.querySelector(`.grid-cell[data-row="${cellRow}"][data-col="${cellCol}"]`);
+                        if (cell && cellRow < gameState.gridSize && cellCol < gameState.gridSize) {
+                            cell.classList.add(isValid ? 'highlight-target' : 'highlight-invalid');
+                        }
+                    }
+                }
+            }
+        }
+
+        function clearHighlights() {
+            document.querySelectorAll('.grid-cell.highlight-target, .grid-cell.highlight-invalid').forEach(cell => {
+                cell.classList.remove('highlight-target', 'highlight-invalid');
+            });
+        }
+
+        function placeBlock(row, col, blockIndex) {
+            const blockObj = gameState.nextBlocks[blockIndex];
+            if (!blockObj) return;
+            
+            const currentBlock = blockObj.shape;
+            const color = blockObj.color;
+            const blockHeight = currentBlock.length;
+            const blockWidth = currentBlock[0].length;
+            
+            if (!checkPlacement(row, col, blockIndex)) {
+                return;
+            }
+            
+            let placedCells = 0;
+            
+            for (let i = 0; i < blockHeight; i++) {
+                for (let j = 0; j < blockWidth; j++) {
+                    if (currentBlock[i][j]) {
+                        const cellRow = row + i;
+                        const cellCol = col + j;
+                        
+                        gameState.grid[cellRow][cellCol] = { 
+                            occupied: true, 
+                            color: color 
+                        };
+                        
+                        const cell = document.querySelector(`.grid-cell[data-row="${cellRow}"][data-col="${cellCol}"]`);
+                        if (cell) {
+                            cell.classList.add('filled');
+                            cell.style.background = color;
+                            cell.style.boxShadow = `0 0 12px ${color}`;
+                            
+                            cell.style.transform = 'scale(0)';
+                            setTimeout(() => {
+                                cell.style.transform = 'scale(1)';
+                            }, 10);
+                        }
+                        placedCells++;
+                    }
+                }
+            }
+            
+            gameState.nextBlocks.splice(blockIndex, 1);
+            
+            if (gameState.nextBlocks.length === 0) {
+                generateNextBlocks();
+            }
+            
+            renderBlockPreviews();
+            gameState.score += placedCells * 10;
+            checkMatches();
+            checkGameOver();
+
+            updateUI();
+        }
+
+        function checkMatches() {
+            let matches = 0;
+            let clearedCells = [];
+            
+            // Check rows
+            for (let i = 0; i < gameState.gridSize; i++) {
+                if (gameState.grid[i].every(cell => cell.occupied)) {
+                    matches++;
+                    for (let j = 0; j < gameState.gridSize; j++) {
+                        clearedCells.push({ row: i, col: j });
+                    }
+                }
+            }
+            
+            // Check columns
+            for (let j = 0; j < gameState.gridSize; j++) {
+                let columnComplete = true;
+                for (let i = 0; i < gameState.gridSize; i++) {
+                    if (!gameState.grid[i][j].occupied) {
+                        columnComplete = false;
+                        break;
+                    }
+                }
+                
+                if (columnComplete) {
+                    matches++;
+                    for (let i = 0; i < gameState.gridSize; i++) {
+                        if (!clearedCells.some(c => c.row === i && c.col === j)) {
+                            clearedCells.push({ row: i, col: j });
+                        }
+                    }
+                }
+            }
+            
+            if (clearedCells.length > 0) {
+                clearedCells.forEach(({ row, col }) => {
+                    const cell = document.querySelector(`.grid-cell[data-row="${row}"][data-col="${col}"]`);
+                    if (cell) {
+                        createParticles(cell);
+                        gameState.grid[row][col] = { occupied: false, color: null };
+                        
+                        setTimeout(() => {
+                            cell.classList.remove('filled');
+                            cell.style.background = '';
+                            cell.style.boxShadow = '';
+                        }, 100);
+                    }
+                });
+
+                const baseScore = clearedCells.length * 10;
+                const comboBonus = matches * 50;
+                gameState.score += baseScore + comboBonus;
+                updateUI();
+            }
+        }
+
+        function checkGameOver() {
+            const remainingBlocks = gameState.nextBlocks.map(b => b.shape);
+            
+            let isGameOver = remainingBlocks.every(block => !canPlaceAnywhere(block));
+
+            if (isGameOver) {
+                gameState.gameOver = true;
+                setTimeout(() => {
+                    showGameOver();
+                }, 500);
+            }
+        }
+
+        function showGameOver() {
+            // Update best score if needed
+            if (gameState.score > gameState.bestScore) {
+                gameState.bestScore = gameState.score;
+                localStorage.setItem('kaaxplaceBestScore', gameState.score);
+                bestScoreDisplay.textContent = gameState.bestScore;
+            }
+            
+            // Set final score and message
+            finalScoreDisplay.textContent = `Score: ${gameState.score}`;
+            
+            // Custom message based on score
+            let message = "Great job! You've reached the end of the game.";
+            if (gameState.score > 500) {
+                message = "Amazing! You're a block puzzle master!";
+            } else if (gameState.score > 300) {
+                message = "Well played! You've got some serious skills!";
+            } else if (gameState.score > 100) {
+                message = "Good effort! Keep practicing to improve!";
+            }
+            gameOverMessage.textContent = message;
+            
+            // Show game over overlay
+            gameOverOverlay.style.display = 'flex';
+            
+            // Add explosion effect to all filled cells
+            document.querySelectorAll('.grid-cell.filled').forEach(cell => {
+                setTimeout(() => {
+                    createParticles(cell, 15);
+                }, Math.random() * 1000);
+            });
+        }
+
+        function canPlaceAnywhere(block) {
+            const blockHeight = block.length;
+            const blockWidth = block[0].length;
+
+            for (let r = 0; r <= gameState.gridSize - blockHeight; r++) {
+                for (let c = 0; c <= gameState.gridSize - blockWidth; c++) {
+                    let possible = true;
+                    
+                    for (let i = 0; i < blockHeight; i++) {
+                        for (let j = 0; j < blockWidth; j++) {
+                            if (block[i][j] && gameState.grid[r + i][c + j].occupied) {
+                                possible = false;
+                                break;
+                            }
+                        }
+                        if (!possible) break;
+                    }
+                    
+                    if (possible) {
+                        return true;
+                    }
+                }
+            }
+            return false;
+        }
+
+        function createParticles(cell, count = 8) {
+            const rect = cell.getBoundingClientRect();
+            const cellColor = cell.style.backgroundColor || '#00ffff'; 
+            const colors = [cellColor, '#ff00ff', '#ffffff'];
+            
+            for (let i = 0; i < count; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                particle.style.left = `${rect.left + rect.width / 2}px`;
+                particle.style.top = `${rect.top + rect.height / 2}px`;
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                document.body.appendChild(particle);
+                
+                const angle = Math.random() * Math.PI * 2;
+                const distance = 60 + Math.random() * 60;
+                const duration = 500 + Math.random() * 500;
+                
+                particle.style.transition = `all ${duration}ms cubic-bezier(0.25, 0.46, 0.45, 0.94)`;
+                setTimeout(() => {
+                    particle.style.left = `${rect.left + rect.width / 2 + Math.cos(angle) * distance}px`;
+                    particle.style.top = `${rect.top + rect.height / 2 + Math.sin(angle) * distance}px`;
+                    particle.style.opacity = '0';
+                    particle.style.transform = 'scale(0.2)';
+                }, 10);
+                
+                setTimeout(() => {
+                    if (particle.parentNode) {
+                        particle.parentNode.removeChild(particle);
+                    }
+                }, duration + 50);
+            }
+        }
+
+        function updateUI() {
+            currentScoreDisplay.textContent = gameState.score;
+            bestScoreDisplay.textContent = gameState.bestScore;
+            
+            if (gameState.nextBlocks.length === 0) {
+                generateNextBlocks();
+                renderBlockPreviews();
+            }
+        }
+
+        function resetGame() {
+            gameState.score = 0;
+            gameState.grid = [];
+            gameState.gameOver = false;
+            gameOverOverlay.style.display = 'none';
+            initializeGrid();
+            generateNextBlocks();
+            updateUI();
+            renderBlockPreviews();
+        }
+
+        function returnToMenu() {
+            gameState.score = 0;
+            gameState.grid = [];
+            gameState.gameOver = false;
+            gameOverOverlay.style.display = 'none';
+            gameInterface.classList.remove('visible');
+            gameInterface.classList.add('hidden');
+            loadingScreen.classList.remove('hidden');
+            loadingScreen.classList.add('visible');
+            initGame();
+        }
+
+        // Event Listeners for Game Over buttons
+        restartButton.addEventListener('click', resetGame);
+        menuButton.addEventListener('click', returnToMenu);
+
+        // Initialize the game when the page loads
+        window.addEventListener('load', initGame);
+
+        // Prevent Default Drag/Drop Behavior
+        document.addEventListener('dragstart', (e) => {
+            e.preventDefault();
+        });
+    </script>
+</body>
+</html>
